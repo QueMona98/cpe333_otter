@@ -20,17 +20,19 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module Memory_State();
+module Memory_State(MEM_CLOCK, MEM_RESET, ER_memWrite, ER_memRead2, ER_REG_WRITE, ER_PC_MEM, ER_PC_4, ER_ALU_OUT,
+                    ER_RS2, ER_RF_WR_SEL, M_IOBUS_ADDR, M_IOBUS_OUT, M_IOBUS_WR, MEM_REG_DOUT2, MEM_REG_ALU_RESULT, MEM_REG_IR,
+                    MEM_REG_PC_4, MEM_RF_WR_SEL, MEM_REG_WRITE);
 
 // Inputs for Memory register
     input MEM_CLOCK, MEM_RESET;
 // Inputs from Execute register
-    input logic ER_memWrite, ER_memRead2, ER_MEM_REG_WRITE;
+    input logic ER_memWrite, ER_memRead2, ER_REG_WRITE;
     input logic [31:0] ER_PC_MEM, ER_PC_4, ER_ALU_OUT, ER_RS2;
     input logic [1:0] ER_RF_WR_SEL;
 
 // Output for IOBUS_ADDR, IOBUS_OUT, IOBUS_WR
-    output logic [31:0] IOBUS_ADDR, IOBUS_OUT, IOBUS_WR;
+    output logic [31:0] M_IOBUS_ADDR, M_IOBUS_OUT, M_IOBUS_WR;
 
 // Wire for Memory dout2
     logic [31:0] DOUT2_TO_MEM_REG;
@@ -44,12 +46,12 @@ module Memory_State();
     
     // Memory Module setup 
     Memory Mem_Module (.MEM_ADDR2(ER_ALU_OUT), .MEM_DIN2(ER_RS2), .MEM_WE2(ER_memWrite), .MEM_RDEN2(ER_memRead2), 
-                       .MEM_SIZE(ER_PC_MEM[14:12]), .IO_WR(IOBUS_WR), .MEM_DOUT2(DOUT2_TO_MEM_REG));
+                       .MEM_SIZE(ER_PC_MEM[14:12]), .IO_WR(M_IOBUS_WR), .MEM_DOUT2(DOUT2_TO_MEM_REG));
     // Still need to assign IOBUS_IN
     
      // Taking care of IOBUS.....
-     assign IOBUS_ADDR = ER_ALU_OUT;
-     assign IOBUS_OUT = ER_RS2;
+     assign M_IOBUS_ADDR = ER_ALU_OUT;
+     assign M_IOBUS_OUT = ER_RS2;
 
     // ----------------------------------- Memory Register Setup -----------------------------------------------
     // Initalize Execute Register to hold the following values:
@@ -75,11 +77,11 @@ module Memory_State();
     MEMORY_REG_2 <= ER_RF_WR_SEL;
     
     // 1-bit value
-    MEMORY_REG_3 <= ER_PC_MEM;
+    MEMORY_REG_3 <= ER_REG_WRITE;
     end
     
      // Reading from the Fetch register should happen on the positive edge of the clock 
-    always_ff @ (posedge EXECUTE_CLOCK) begin
+    always_ff @ (posedge MEM_CLOCK) begin
     
     // 32-bit reads
     MEM_REG_PC_4 <= MEMORY_REG_1[0];

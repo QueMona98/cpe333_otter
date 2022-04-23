@@ -58,7 +58,7 @@ module Decode_State(REG_CLOCK, REG_RESET, FR_MEM, FR_PC, FR_PC_4, DEC_PC_OUT, DE
     
     // ----------------------------------- Register File Setup -----------------------------------------------
     
-   Register_File_HW_3 Reg_File (.CLOCK(REG_CLOCK), .WD(FR_MEM), .RF_RS1(REG_FILE_RS1), .RF_RS2(REG_FILE_RS2));
+   Register_File_HW_3 Reg_File (.CLOCK(REG_CLOCK), .input_reg(FR_MEM), .RF_RS1(REG_FILE_RS1), .RF_RS2(REG_FILE_RS2));
    
        // ----------------------------------- Immediate Generator Setup -----------------------------------------------
        

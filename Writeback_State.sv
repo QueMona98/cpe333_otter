@@ -41,6 +41,6 @@ module Writeback_State(MR_dout2, MR_alu_result, MR_ir, MR_PC_4, MR_rf_wr_sel, MR
     
      // ----------------------------------- Register File Setup -----------------------------------------------
     
-   Register_File_HW_3 Reg_File (.WD(MUX_OUT_TO_REG_FILE), .wa(MR_ir[11:7]), .ENABLE(MR_regWrite));
+   Register_File_HW_3 Reg_File (.WD(MUX_OUT_TO_REG_FILE), .ENABLE(MR_regWrite));
    
 endmodule

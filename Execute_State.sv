@@ -21,7 +21,8 @@
 
 
 module Execute_State(EXECUTE_CLOCK, EXECUTE_RESET, DR_J_TYPE, DR_B_TYPE, DR_I_TYPE, DR_PC_MEM, DR_RS1, DR_RS2, DR_ALU_FUN, JALR_TO_PC, BRANCH_TO_PC,
-                     JAL_TO_PC, PCSOURCE_TO_PC, DR_REG_WRITE, DR_MEM_WRITE, DR_MEM_READ2, DR_RF_WR_SEL, DR_PC_4);
+                     JAL_TO_PC, PCSOURCE_TO_PC, DR_REG_WRITE, DR_MEM_WRITE, DR_MEM_READ2, DR_RF_WR_SEL, DR_PC_4, EXEC_PC_4,
+                     EXEC_PC_MEM, EXEC_ALU_RESULT, EXEC_RS2, EXEC_RF_WR_SEL, EXEC_REGWRITE, EXEC_MEMWRITE, EXEC_MEMREAD2);
 
 // Inputs for clock and reset signals
     input EXECUTE_CLOCK, EXECUTE_RESET;
@@ -68,9 +69,9 @@ module Execute_State(EXECUTE_CLOCK, EXECUTE_RESET, DR_J_TYPE, DR_B_TYPE, DR_I_TY
     // 2-bit: rf_wr_sel from Decode register
     // 1-bit from Decode register: regWrite, memWrite, memRead2
     
-    logic [31:0] EXECUTE_REG1[0:3];  // 32-bit values
-    logic [1:0] EXECUTE_REG2;  // 2-bit value
-    logic EXECUTE_REG3[0:2];  // 1-bit values
+    logic [31:0] EXECUTE_REG_1[0:3];  // 32-bit values
+    logic [1:0] EXECUTE_REG_2;  // 2-bit value
+    logic EXECUTE_REG_3[0:2];  // 1-bit values
     
       // Save the various outputs on the negative edge of the clock cycle
     always_ff @ (negedge EXECUTE_CLOCK) begin
@@ -82,12 +83,12 @@ module Execute_State(EXECUTE_CLOCK, EXECUTE_RESET, DR_J_TYPE, DR_B_TYPE, DR_I_TY
     EXECUTE_REG_1[3] <= DR_RS2;         // rs2 from Decode register
     
     // 2- bit value
-    EXECUTE_REG2 <= DR_RF_WR_SEL;       // RF_WR_SEL from Decode register
+    EXECUTE_REG_2 <= DR_RF_WR_SEL;       // RF_WR_SEL from Decode register
     
     // 1-bit values
-    EXECUTE_REG3[0] <= DR_REG_WRITE;    // regWrite from Decode register
-    EXECUTE_REG3[1] <= DR_MEM_WRITE;    // memWrite from Decode register
-    EXECUTE_REG3[2] <= DR_MEM_READ2;    // memRead2 from Decode register
+    EXECUTE_REG_3[0] <= DR_REG_WRITE;    // regWrite from Decode register
+    EXECUTE_REG_3[1] <= DR_MEM_WRITE;    // memWrite from Decode register
+    EXECUTE_REG_3[2] <= DR_MEM_READ2;    // memRead2 from Decode register
     
     end
     
