@@ -83,33 +83,40 @@ module Decode_State(REG_CLOCK, REG_RESET, FR_MEM, FR_PC, FR_PC_4, DEC_PC_OUT, DE
     // 4-bit value: Output from decoder: alu_fun
     // 2-bit value: Output from decoder: rf_wr_sel
     
-    logic [31:0]DECODE_REG_1[0:6]; // 32-bit values
-    logic DECODE_REG_2[0:2];  // Single-bit values
+    logic [0:6][31:0]DECODE_REG_1; // 32-bit values
+    logic [0:2]DECODE_REG_2;  // Single-bit values
     logic [3:0]DECODE_REG_3;       // 4-bit value
     logic [1:0]DECODE_REG_4;       // 2-bit value
     
     // Save the various outputs on the negative edge of the clock cycle
     always_ff @ (negedge REG_CLOCK) begin
-    
-    // 32-bit values
-    DECODE_REG_1[0] <= FR_PC_4 ;
-    DECODE_REG_1[1] <= ALU_A_TO_DR;
-    DECODE_REG_1[2] <= FR_MEM;
-    DECODE_REG_1[3] <= ALU_B_TO_DR;
-    DECODE_REG_1[4] <= J_TYPE;
-    DECODE_REG_1[5] <= B_TYPE;
-    DECODE_REG_1[6] <= I_TYPE;
-    
-    // Single-bit values
-    DECODE_REG_2[0] <= REGWRITE_TO_DR;
-    DECODE_REG_2[1] <= MEMWRITE_TO_DR;
-    DECODE_REG_2[2] <= MEMREAD2_TO_DR;
-    
-    // 4-bit value
-    DECODE_REG_3 <= ALU_FUN_TO_DR;
-    
-    // 2-bit value
-    DECODE_REG_4 <= RF_WR_SEL_TO_DR;
+    if (REG_RESET == 1'b1) begin
+        DECODE_REG_1 <= 0;
+        DECODE_REG_2 <= 0;
+        DECODE_REG_3 <= 0;
+        DECODE_REG_4 <= 0;
+    end
+    else begin     
+        // 32-bit values
+        DECODE_REG_1[0] <= FR_PC_4 ;
+        DECODE_REG_1[1] <= ALU_A_TO_DR;
+        DECODE_REG_1[2] <= FR_MEM;
+        DECODE_REG_1[3] <= ALU_B_TO_DR;
+        DECODE_REG_1[4] <= J_TYPE;
+        DECODE_REG_1[5] <= B_TYPE;
+        DECODE_REG_1[6] <= I_TYPE;
+        
+        // Single-bit values
+        DECODE_REG_2[0] <= REGWRITE_TO_DR;
+        DECODE_REG_2[1] <= MEMWRITE_TO_DR;
+        DECODE_REG_2[2] <= MEMREAD2_TO_DR;
+        
+        // 4-bit value
+        DECODE_REG_3 <= ALU_FUN_TO_DR;
+        
+        // 2-bit value
+        DECODE_REG_4 <= RF_WR_SEL_TO_DR;
+        end
     end
     
     // Reading from the Fetch register should happen on the positive edge of the clock 

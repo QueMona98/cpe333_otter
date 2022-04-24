@@ -60,39 +60,44 @@ module Memory_State(MEM_CLOCK, MEM_RESET, ER_memWrite, ER_memRead2, ER_REG_WRITE
     // 2-bit: rf_wr_sel from Execute register
     // 1-bit: regWrite from Execute register
     
-    logic [31:0] MEMORY_REG_1[0:3];  // 32-bit values
+    logic [0:3][31:0]MEMORY_REG_1;  // 32-bit values
     logic [1:0] MEMORY_REG_2;        // 2-bit value
     logic MEMORY_REG_3;              // 1-bit value
     
     // Save the various outputs on the negative edge of the clock cycle
     always_ff @ (negedge MEM_CLOCK) begin
-    
-    // 32-bit values
-    MEMORY_REG_1[0] <= ER_PC_4 ;              // PC + 4 from Execute register
-    MEMORY_REG_1[1] <= DOUT2_TO_MEM_REG;      // DOUT2 from Memory module
-    MEMORY_REG_1[2] <= ER_ALU_OUT;            // ALU Output from Execute register   
-    MEMORY_REG_1[3] <= ER_PC_MEM;                // Current PC from Execute register
-    
-    // 2-bit value
-    MEMORY_REG_2 <= ER_RF_WR_SEL;
-    
-    // 1-bit value
-    MEMORY_REG_3 <= ER_REG_WRITE;
+        if(MEM_RESET <= 0) begin
+        MEMORY_REG_1 <= 0;
+        MEMORY_REG_2 <= 0;
+        MEMORY_REG_3 <= 0;
+    end
+    else begin
+        // 32-bit values
+        MEMORY_REG_1[0] <= ER_PC_4 ;              // PC + 4 from Execute register
+        MEMORY_REG_1[1] <= DOUT2_TO_MEM_REG;      // DOUT2 from Memory module
+        MEMORY_REG_1[2] <= ER_ALU_OUT;            // ALU Output from Execute register   
+        MEMORY_REG_1[3] <= ER_PC_MEM;                // Current PC from Execute register
+        
+        // 2-bit value
+        MEMORY_REG_2 <= ER_RF_WR_SEL;
+        
+        // 1-bit value
+        MEMORY_REG_3 <= ER_REG_WRITE;
+        end
     end
     
      // Reading from the Fetch register should happen on the positive edge of the clock 
     always_ff @ (posedge MEM_CLOCK) begin
-    
-    // 32-bit reads
-    MEM_REG_PC_4 <= MEMORY_REG_1[0];
-    MEM_REG_DOUT2 <=  MEMORY_REG_1[1];
-    MEM_REG_ALU_RESULT <= MEMORY_REG_1[2];
-    MEM_REG_IR <= MEMORY_REG_1[3];
-    
-    // 2-bit read
-    MEM_RF_WR_SEL <= MEMORY_REG_2;
-    
-    //1-bit read
-    MEM_REG_WRITE <= MEMORY_REG_3;
+        // 32-bit reads
+        MEM_REG_PC_4 <= MEMORY_REG_1[0];
+        MEM_REG_DOUT2 <=  MEMORY_REG_1[1];
+        MEM_REG_ALU_RESULT <= MEMORY_REG_1[2];
+        MEM_REG_IR <= MEMORY_REG_1[3];
+        
+        // 2-bit read
+        MEM_RF_WR_SEL <= MEMORY_REG_2;
+        
+        //1-bit read
+        MEM_REG_WRITE <= MEMORY_REG_3;
     end
 endmodule

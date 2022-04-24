@@ -69,45 +69,49 @@ module Execute_State(EXECUTE_CLOCK, EXECUTE_RESET, DR_J_TYPE, DR_B_TYPE, DR_I_TY
     // 2-bit: rf_wr_sel from Decode register
     // 1-bit from Decode register: regWrite, memWrite, memRead2
     
-    logic [31:0] EXECUTE_REG_1[0:3];  // 32-bit values
+    logic [0:3][31:0]EXECUTE_REG_1;  // 32-bit values
     logic [1:0] EXECUTE_REG_2;  // 2-bit value
-    logic EXECUTE_REG_3[0:2];  // 1-bit values
+    logic [0:2]EXECUTE_REG_3;  // 1-bit values
     
       // Save the various outputs on the negative edge of the clock cycle
     always_ff @ (negedge EXECUTE_CLOCK) begin
-    
-    // 32-bit values
-    EXECUTE_REG_1[0] <= DR_PC_4 ;       // PC + 4 from Decode register
-    EXECUTE_REG_1[1] <= DR_PC_MEM;      // DOUT 1 from Decode register
-    EXECUTE_REG_1[2] <= ALU_OUT_TO_REG; // ALU Output   
-    EXECUTE_REG_1[3] <= DR_RS2;         // rs2 from Decode register
-    
-    // 2- bit value
-    EXECUTE_REG_2 <= DR_RF_WR_SEL;       // RF_WR_SEL from Decode register
-    
-    // 1-bit values
-    EXECUTE_REG_3[0] <= DR_REG_WRITE;    // regWrite from Decode register
-    EXECUTE_REG_3[1] <= DR_MEM_WRITE;    // memWrite from Decode register
-    EXECUTE_REG_3[2] <= DR_MEM_READ2;    // memRead2 from Decode register
-    
+    if (EXECUTE_RESET == 1'b1) begin
+        EXECUTE_REG_1 <= 0;
+        EXECUTE_REG_2 <= 0;
+        EXECUTE_REG_3 <= 0;
+    end
+    else begin
+        // 32-bit values
+        EXECUTE_REG_1[0] <= DR_PC_4 ;       // PC + 4 from Decode register
+        EXECUTE_REG_1[1] <= DR_PC_MEM;      // DOUT 1 from Decode register
+        EXECUTE_REG_1[2] <= ALU_OUT_TO_REG; // ALU Output   
+        EXECUTE_REG_1[3] <= DR_RS2;         // rs2 from Decode register
+        
+        // 2- bit value
+        EXECUTE_REG_2 <= DR_RF_WR_SEL;       // RF_WR_SEL from Decode register
+        
+        // 1-bit values
+        EXECUTE_REG_3[0] <= DR_REG_WRITE;    // regWrite from Decode register
+        EXECUTE_REG_3[1] <= DR_MEM_WRITE;    // memWrite from Decode register
+        EXECUTE_REG_3[2] <= DR_MEM_READ2;    // memRead2 from Decode register
+        end
     end
     
      // Reading from the Fetch register should happen on the positive edge of the clock 
     always_ff @ (posedge EXECUTE_CLOCK) begin
-    
-    // 32-bit reads
-    EXEC_PC_4 = EXECUTE_REG_1[0];
-    EXEC_PC_MEM = EXECUTE_REG_1[1];
-    EXEC_ALU_RESULT = EXECUTE_REG_1[2];
-    EXEC_RS2 = EXECUTE_REG_1[3];
-    
-    // 2-bit reads
-    EXEC_RF_WR_SEL = EXECUTE_REG_2;
-    
-    // 1-bit reads
-    EXEC_REGWRITE = EXECUTE_REG_3[0];
-    EXEC_MEMWRITE = EXECUTE_REG_3[1];
-    EXEC_MEMREAD2 = EXECUTE_REG_3[2];
-    
+        
+        // 32-bit reads
+        EXEC_PC_4 = EXECUTE_REG_1[0];
+        EXEC_PC_MEM = EXECUTE_REG_1[1];
+        EXEC_ALU_RESULT = EXECUTE_REG_1[2];
+        EXEC_RS2 = EXECUTE_REG_1[3];
+        
+        // 2-bit reads
+        EXEC_RF_WR_SEL = EXECUTE_REG_2;
+        
+        // 1-bit reads
+        EXEC_REGWRITE = EXECUTE_REG_3[0];
+        EXEC_MEMWRITE = EXECUTE_REG_3[1];
+        EXEC_MEMREAD2 = EXECUTE_REG_3[2];
     end
     endmodule

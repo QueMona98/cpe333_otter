@@ -33,7 +33,7 @@ FETCH_REG_OUT, FETCH_REG_PC, FETCH_REG_PC_4);
     
     // Program Count setup 
     Program_Counter MyCounter (.pc_write(PC_WRITE), .pc_rst(RESET),
-.pc_clk(CLOCK), .PC_DIN(MUX_to_PC), .PC_CNT(PC_OUT));
+    .pc_clk(CLOCK), .PC_DIN(MUX_to_PC), .PC_CNT(PC_OUT));
 
     // 4 Option MUX
     PC_MUX Prog_Count_MUX (.MUX_SEL(PC_SOURCE), .PC_4(PC_PLUS_4), .JALR(MUX_JALR),
@@ -47,20 +47,25 @@ FETCH_REG_OUT, FETCH_REG_PC, FETCH_REG_PC_4);
     // Fetch Register for Pipeline Setup (write output of Memory to Fetch Register on negative clock cycle)
     
     // Initialize FETCH_REG to hold three values: PC, incremented PC and output of Memory
-    logic [31:0]FETCH_REG[0:3];
+    logic [0:2][31:0]FETCH_REG;
     
     // Save the value of the output of the Memory module and PC+4 to the Fetch Register on negative clock cycle
     always_ff @ (negedge CLOCK) begin
-    FETCH_REG[0] <= MEM_IR;
-    FETCH_REG[1] <= PC_OUT;
-    FETCH_REG[2] <= PC_PLUS_4;
-    end
+        FETCH_REG[0] <= MEM_IR;
+        FETCH_REG[1] <= PC_OUT;
+        FETCH_REG[2] <= PC_PLUS_4;
+    end 
     
     // Reading from the Fetch register should happen on the positive edge of the clock 
     always_ff @ (posedge CLOCK) begin
-    FETCH_REG_OUT <= FETCH_REG[0];
-    FETCH_REG_PC <= FETCH_REG[1];
-    FETCH_REG_PC_4 <= FETCH_REG[2];
+        if (RESET == 1'b1) begin
+            FETCH_REG <= 3'b000;
+        end
+        else begin
+            FETCH_REG_OUT <= FETCH_REG[0];
+            FETCH_REG_PC <= FETCH_REG[1];
+            FETCH_REG_PC_4 <= FETCH_REG[2];
+        end
     end
     
 endmodule
