@@ -20,7 +20,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module Execute_State(EXECUTE_CLOCK, EXECUTE_RESET, DR_J_TYPE, DR_B_TYPE, DR_I_TYPE, DR_PC_MEM, DR_RS1, DR_RS2, DR_ALU_FUN, JALR_TO_PC, BRANCH_TO_PC,
+module Execute_State(EXECUTE_CLOCK, EXECUTE_RESET, DR_J_TYPE, DR_B_TYPE, DR_I_TYPE, DR_PC_MEM, DR_RS1, DR_RS2, DR_ALU_A, DR_ALU_B, DR_ALU_FUN, JALR_TO_PC, BRANCH_TO_PC,
                      JAL_TO_PC, PCSOURCE_TO_PC, DR_REG_WRITE, DR_MEM_WRITE, DR_MEM_READ2, DR_RF_WR_SEL, DR_PC_4, EXEC_PC_4,
                      EXEC_PC_MEM, EXEC_ALU_RESULT, EXEC_RS2, EXEC_RF_WR_SEL, EXEC_REGWRITE, EXEC_MEMWRITE, EXEC_MEMREAD2);
 
@@ -34,7 +34,7 @@ module Execute_State(EXECUTE_CLOCK, EXECUTE_RESET, DR_J_TYPE, DR_B_TYPE, DR_I_TY
 // Input for Branch Condition Generator + ALU
     input logic [31:0] DR_RS2;
 // Input for ALU
-    input logic [31:0] DR_ALU_FUN;
+    input logic [31:0] DR_ALU_FUN, DR_ALU_A, DR_ALU_B;
 
 // Inputs to pass directly into Execute register
     input logic DR_REG_WRITE, DR_MEM_WRITE, DR_MEM_READ2;
@@ -61,7 +61,7 @@ module Execute_State(EXECUTE_CLOCK, EXECUTE_RESET, DR_J_TYPE, DR_B_TYPE, DR_I_TY
     Brand_Cond_Gen BC_Generator (.REG_INPUTA(DR_RS1), .REG_INPUTB(DR_RS2), .DR_MEM_OUT(DR_PC_MEM), .PC_SOURCE_OUT(PCSOURCE_TO_PC));
     
     // ----------------------------------- ALU Setup -----------------------------------------------
-    ALU_HW_4 Execute_ALU (.ALU_A(DR_RS1), .ALU_B(DR_RS2), .ALU_FUN(DR_ALU_FUN), .RESULT(ALU_OUT_TO_REG));
+    ALU_HW_4 Execute_ALU (.ALU_A(DR_ALU_A), .ALU_B(DR_ALU_B), .ALU_FUN(DR_ALU_FUN), .RESULT(ALU_OUT_TO_REG));
 
     // ----------------------------------- Execute Register Setup -----------------------------------------------
     // Initalize Execute Register to hold the following values:
@@ -101,17 +101,17 @@ module Execute_State(EXECUTE_CLOCK, EXECUTE_RESET, DR_J_TYPE, DR_B_TYPE, DR_I_TY
     always_ff @ (posedge EXECUTE_CLOCK) begin
         
         // 32-bit reads
-        EXEC_PC_4 = EXECUTE_REG_1[0];
-        EXEC_PC_MEM = EXECUTE_REG_1[1];
-        EXEC_ALU_RESULT = EXECUTE_REG_1[2];
-        EXEC_RS2 = EXECUTE_REG_1[3];
+        EXEC_PC_4 <= EXECUTE_REG_1[0];
+        EXEC_PC_MEM <= EXECUTE_REG_1[1];
+        EXEC_ALU_RESULT <= EXECUTE_REG_1[2];
+        EXEC_RS2 <= EXECUTE_REG_1[3];
         
         // 2-bit reads
-        EXEC_RF_WR_SEL = EXECUTE_REG_2;
+        EXEC_RF_WR_SEL <= EXECUTE_REG_2;
         
         // 1-bit reads
-        EXEC_REGWRITE = EXECUTE_REG_3[0];
-        EXEC_MEMWRITE = EXECUTE_REG_3[1];
-        EXEC_MEMREAD2 = EXECUTE_REG_3[2];
+        EXEC_REGWRITE <= EXECUTE_REG_3[0];
+        EXEC_MEMWRITE <= EXECUTE_REG_3[1];
+        EXEC_MEMREAD2 <= EXECUTE_REG_3[2];
     end
     endmodule

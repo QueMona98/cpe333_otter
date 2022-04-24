@@ -21,7 +21,7 @@
 
 
 module Decode_State(REG_CLOCK, REG_RESET, FR_MEM, FR_PC, FR_PC_4, DEC_PC_OUT, DEC_ALU_A, DEC_ALU_B, DEC_J_TYPE, DEC_B_TYPE,
-                    DEC_MEM_IR, DEC_ALU_FUN, DEC_REGWRITE, DEC_MEMWRITE, DEC_MEMREAD_2, DEC_RF_WR_SEL, DEC_I_TYPE);
+                    DEC_MEM_IR, DEC_ALU_FUN, DEC_REGWRITE, DEC_MEMWRITE, DEC_MEMREAD_2, DEC_RF_WR_SEL, DEC_I_TYPE, DEC_RS1, DEC_RS2);
     // Inputs for register file
     input logic REG_CLOCK, REG_RESET;
     // 32-bit outputs from Fetch Register
@@ -46,7 +46,7 @@ module Decode_State(REG_CLOCK, REG_RESET, FR_MEM, FR_PC, FR_PC_4, DEC_PC_OUT, DE
     logic [31:0] ALU_A_TO_DR, ALU_B_TO_DR;
     
     // Outputs of Decode register 
-    output logic [31:0] DEC_PC_OUT, DEC_ALU_A, DEC_ALU_B, DEC_J_TYPE, DEC_B_TYPE, DEC_I_TYPE, DEC_MEM_IR;
+    output logic [31:0] DEC_PC_OUT, DEC_ALU_A, DEC_ALU_B, DEC_J_TYPE, DEC_B_TYPE, DEC_I_TYPE, DEC_MEM_IR, DEC_RS1, DEC_RS2;
     output logic [3:0] DEC_ALU_FUN;
     output logic DEC_REGWRITE, DEC_MEMWRITE, DEC_MEMREAD_2;
     output logic [1:0] DEC_RF_WR_SEL;
@@ -74,7 +74,7 @@ module Decode_State(REG_CLOCK, REG_RESET, FR_MEM, FR_PC, FR_PC_4, DEC_PC_OUT, DE
    ALU_MUX_srcB MUX_B (.REG_rs2(REG_FILE_RS2), .IMM_GEN_I_Type(I_TYPE), .IMM_GEN_S_Type(S_TYPE), .PC_OUT(FR_PC),
    .alu_srcB(ALU_B), .srcB(ALU_B_TO_DR));
    
-   // ----------------------------------- Fetch Register Setup -----------------------------------------------
+   // ----------------------------------- Decode Register Setup -----------------------------------------------
    
     // Initialize DECODE_REG to hold ten values: 32-bit: Incremented PC from Fetch register, Output of ALU_A,
     // Output of Fetch register, Output of ALU_B, J-type output of Immediate Generator, B-Type output of Immediate Generator
@@ -83,7 +83,7 @@ module Decode_State(REG_CLOCK, REG_RESET, FR_MEM, FR_PC, FR_PC_4, DEC_PC_OUT, DE
     // 4-bit value: Output from decoder: alu_fun
     // 2-bit value: Output from decoder: rf_wr_sel
     
-    logic [0:6][31:0]DECODE_REG_1; // 32-bit values
+    logic [0:8][31:0]DECODE_REG_1; // 32-bit values
     logic [0:2]DECODE_REG_2;  // Single-bit values
     logic [3:0]DECODE_REG_3;       // 4-bit value
     logic [1:0]DECODE_REG_4;       // 2-bit value
@@ -105,6 +105,8 @@ module Decode_State(REG_CLOCK, REG_RESET, FR_MEM, FR_PC, FR_PC_4, DEC_PC_OUT, DE
         DECODE_REG_1[4] <= J_TYPE;
         DECODE_REG_1[5] <= B_TYPE;
         DECODE_REG_1[6] <= I_TYPE;
+        DECODE_REG_1[7] <= REG_FILE_RS1;
+        DECODE_REG_1[8] <= REG_FILE_RS2;
         
         // Single-bit values
         DECODE_REG_2[0] <= REGWRITE_TO_DR;
@@ -130,6 +132,8 @@ module Decode_State(REG_CLOCK, REG_RESET, FR_MEM, FR_PC, FR_PC_4, DEC_PC_OUT, DE
     DEC_J_TYPE <= DECODE_REG_1[4];
     DEC_B_TYPE <= DECODE_REG_1[5];
     DEC_I_TYPE <= DECODE_REG_1[6];
+    DEC_RS1 <= DECODE_REG_1[7];
+    DEC_RS2 <= DECODE_REG_1[8];
 
     
     // Single-bit reads

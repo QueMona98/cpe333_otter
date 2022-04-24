@@ -54,7 +54,7 @@ module Memory_State(MEM_CLOCK, MEM_RESET, ER_memWrite, ER_memRead2, ER_REG_WRITE
      assign M_IOBUS_OUT = ER_RS2;
 
     // ----------------------------------- Memory Register Setup -----------------------------------------------
-    // Initalize Execute Register to hold the following values:
+    // Initalize Memory Register to hold the following values:
     // 32-bit: ALU result from Execute register, DOUT2 from Memory module, Current PC from Execute Register, PC + 4 from 
     // Execute register
     // 2-bit: rf_wr_sel from Execute register
@@ -66,7 +66,7 @@ module Memory_State(MEM_CLOCK, MEM_RESET, ER_memWrite, ER_memRead2, ER_REG_WRITE
     
     // Save the various outputs on the negative edge of the clock cycle
     always_ff @ (negedge MEM_CLOCK) begin
-        if(MEM_RESET <= 0) begin
+        if(MEM_RESET == 1'b1) begin
         MEMORY_REG_1 <= 0;
         MEMORY_REG_2 <= 0;
         MEMORY_REG_3 <= 0;

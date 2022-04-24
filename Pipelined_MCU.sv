@@ -46,16 +46,16 @@ module Pipelined_MCU(RST, CLK, IOBUS_IN, IOBUS_WR, IOBUS_OUT, IOBUS_ADDR);
     // --------------------------------- Decode State Setup-----------------------------------------------
 
     // Logics to connect outputs of Decode state to Execute State
-    logic [31:0] Decoder_PC_4, Decoder_rs1, Decoder_rs2, Decoder_J_type, Decoder_B_type, Decoder_I_type, Decoder_dout1;
+    logic [31:0] Decoder_PC_4, Decoder_rs1, Decoder_rs2, Decoder_J_type, Decoder_B_type, Decoder_I_type, Decoder_dout1, Decoder_ALU_A, Decoder_ALU_B;
     logic [3:0] Decoder_alu_fun;
     logic Decoder_regWrite, Decoder_memWrite, Decoder_memRead2;
     logic [1:0] Decoder_rf_wr_sel;
     
     Decode_State DS (.REG_CLOCK(CLK), .REG_RESET(RST), .FR_MEM(Fetch_reg_dout1), .FR_PC(Fetch_reg_pc), .FR_PC_4(Fetch_reg_PC_4), // Inputs 
-                    .DEC_PC_OUT(Decoder_PC_4), .DEC_ALU_A(Decoder_rs1), .DEC_ALU_B(Decoder_rs2), .DEC_J_TYPE(Decoder_J_type), // Outputs
+                    .DEC_PC_OUT(Decoder_PC_4), .DEC_ALU_A(Decoder_ALU_A), .DEC_ALU_B(Decoder_ALU_B), .DEC_J_TYPE(Decoder_J_type), // Outputs
                     .DEC_B_TYPE(Decoder_B_type), .DEC_I_TYPE(Decoder_I_type), .DEC_MEM_IR(Decoder_dout1), .DEC_ALU_FUN(Decoder_alu_fun), 
                     .DEC_REGWRITE(Decoder_regWrite), .DEC_MEMWRITE(Decoder_memWrite), .DEC_MEMREAD_2(Decoder_memRead2),
-                    .DEC_RF_WR_SEL(Decoder_rf_wr_sel));
+                    .DEC_RF_WR_SEL(Decoder_rf_wr_sel), .DEC_RS1(Decoder_rs1), .DEC_RS2(Decoder_rs2));
                     
     // --------------------------------- Execute State Setup-----------------------------------------------
     
@@ -67,7 +67,7 @@ module Pipelined_MCU(RST, CLK, IOBUS_IN, IOBUS_WR, IOBUS_OUT, IOBUS_ADDR);
     
     Execute_State ES (.EXECUTE_CLOCK(CLK), .EXECUTE_RESET(RST), .DR_J_TYPE(Decoder_J_type), .DR_B_TYPE(Decoder_B_type), // Inputs
                       .DR_I_TYPE(Decoder_I_type), .DR_PC_MEM(Decoder_dout1), .DR_RS1(Decoder_rs1), .DR_RS2(Decoder_rs2), 
-                      .DR_ALU_FUN(Decoder_alu_fun), .DR_REG_WRITE(Decoder_regWrite), .DR_MEM_WRITE(Decoder_memWrite),
+                      .DR_ALU_A(Decoder_ALU_A), .DR_ALU_B(Decoder_ALU_B), .DR_ALU_FUN(Decoder_alu_fun), .DR_REG_WRITE(Decoder_regWrite), .DR_MEM_WRITE(Decoder_memWrite),
                       .DR_MEM_READ2(Decoder_memRead2), .DR_RF_WR_SEL(Decoder_rf_wr_sel), .DR_PC_4(Decoder_PC_4), 
                       .EXEC_PC_4(Execute_PC_4), .EXEC_PC_MEM(Execute_dout1), .EXEC_ALU_RESULT(Execute_alu_out),         // Outputs
                       .EXEC_RS2(Execute_rs2), .EXEC_RF_WR_SEL(Execute_rf_wr_sel), .EXEC_REGWRITE(Execute_regWrite),
