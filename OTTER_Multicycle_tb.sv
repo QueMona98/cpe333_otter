@@ -6,7 +6,7 @@ module OTTER_Multicycle_tb();
     logic cpu_clk, reset, iobus_wr;
     logic [31:0] iobus_in, iobus_out, iobus_addr;
     
-     always #5 cpu_clk = ~cpu_clk;
+    always #5 cpu_clk = ~cpu_clk;
     
     Pipelined_MCU UUT (.CLK(cpu_clk), .RST(reset), .IOBUS_IN(iobus_in), // Inputs
                        .IOBUS_WR(iobus_wr), .IOBUS_OUT(iobus_out), .IOBUS_ADDR(iobus_addr)); // Outputs
