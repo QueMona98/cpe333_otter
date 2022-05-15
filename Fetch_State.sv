@@ -10,6 +10,7 @@ FETCH_REG_OUT, FETCH_REG_PC, FETCH_REG_PC_4);
     input logic  PC_WRITE;
     input logic [1:0]PC_SOURCE;
     input logic [31:0] MUX_JALR, MUX_BRANCH, MUX_JAL;
+        
     // Logic for MUX to PC
     logic [31:0] MUX_to_PC;
     

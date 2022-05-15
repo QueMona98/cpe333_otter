@@ -22,7 +22,8 @@
 
 module Execute_State(EXECUTE_CLOCK, EXECUTE_RESET, DR_J_TYPE, DR_B_TYPE, DR_I_TYPE, DR_PC_MEM, DR_RS1, DR_RS2, DR_ALU_A, DR_ALU_B, DR_ALU_FUN, JALR_TO_PC, BRANCH_TO_PC,
                      JAL_TO_PC, PCSOURCE_TO_PC, DR_REG_WRITE, DR_MEM_WRITE, DR_MEM_READ2, DR_RF_WR_SEL, DR_PC_4, EXEC_PC_4,
-                     EXEC_PC_MEM, EXEC_ALU_RESULT, EXEC_RS2, EXEC_RF_WR_SEL, EXEC_REGWRITE, EXEC_MEMWRITE, EXEC_MEMREAD2);
+                     EXEC_PC_MEM, EXEC_ALU_RESULT, EXEC_RS2, EXEC_RF_WR_SEL, EXEC_REGWRITE, EXEC_MEMWRITE, EXEC_MEMREAD2,
+                     ID_EX_RD, EX_MS_RD);
 
 // Inputs for clock and reset signals
     input EXECUTE_CLOCK, EXECUTE_RESET;
@@ -41,6 +42,8 @@ module Execute_State(EXECUTE_CLOCK, EXECUTE_RESET, DR_J_TYPE, DR_B_TYPE, DR_I_TY
     input logic [1:0] DR_RF_WR_SEL;
     input logic [31:0] DR_PC_4;
     
+    input logic [4:0] ID_EX_RD;
+    
 // Logics for outputs of ALU and rs2
     logic [31:0] ALU_OUT_TO_REG;
 
@@ -52,6 +55,8 @@ module Execute_State(EXECUTE_CLOCK, EXECUTE_RESET, DR_J_TYPE, DR_B_TYPE, DR_I_TY
     output logic [31:0] EXEC_PC_4, EXEC_PC_MEM, EXEC_ALU_RESULT, EXEC_RS2;
     output logic [1:0] EXEC_RF_WR_SEL;
     output logic EXEC_REGWRITE, EXEC_MEMWRITE, EXEC_MEMREAD2;
+    
+    output logic [4:0] EX_MS_RD;
     
     // ----------------------------------- Target Gen Setup -----------------------------------------------
     Branch_Addr_Gen_HW_5 Target_Gen (.PC_COUNT(DR_PC_MEM), .J_INPUT(DR_J_TYPE), .B_INPUT(DR_B_TYPE), .I_INPUT(DR_I_TYPE),
@@ -94,6 +99,8 @@ module Execute_State(EXECUTE_CLOCK, EXECUTE_RESET, DR_J_TYPE, DR_B_TYPE, DR_I_TY
         EXECUTE_REG_3[0] <= DR_REG_WRITE;    // regWrite from Decode register
         EXECUTE_REG_3[1] <= DR_MEM_WRITE;    // memWrite from Decode register
         EXECUTE_REG_3[2] <= DR_MEM_READ2;    // memRead2 from Decode register
+        
+        EX_MS_RD <= ID_EX_RD; 
         end
     end
     

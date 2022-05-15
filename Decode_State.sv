@@ -21,11 +21,18 @@
 
 
 module Decode_State(REG_CLOCK, REG_RESET, FR_MEM, FR_PC, FR_PC_4, DEC_PC_OUT, DEC_ALU_A, DEC_ALU_B, DEC_J_TYPE, DEC_B_TYPE,
-                    DEC_MEM_IR, DEC_ALU_FUN, DEC_REGWRITE, DEC_MEMWRITE, DEC_MEMREAD_2, DEC_RF_WR_SEL, DEC_I_TYPE, DEC_RS1, DEC_RS2);
+                    DEC_MEM_IR, DEC_ALU_FUN, DEC_REGWRITE, DEC_MEMWRITE, DEC_MEMREAD_2, DEC_RF_WR_SEL, DEC_I_TYPE, DEC_RS1, DEC_RS2,
+                    ID_EX_RS1, ID_EX_RS2, ID_EX_RD, OVERRIDE_A, OVERRIDE_B);
+                    
     // Inputs for register file
     input logic REG_CLOCK, REG_RESET;
+    
     // 32-bit outputs from Fetch Register
     input logic [31:0] FR_MEM, FR_PC, FR_PC_4;
+    
+    // Input for overriding MUXES
+    input logic [1:0] OVERRIDE_A;
+    input logic [2:0] OVERRIDE_B;
     
     // Wires for outputs of Decoder that go to Decode Register
     logic REGWRITE_TO_DR, MEMWRITE_TO_DR, MEMREAD2_TO_DR;
@@ -50,6 +57,7 @@ module Decode_State(REG_CLOCK, REG_RESET, FR_MEM, FR_PC, FR_PC_4, DEC_PC_OUT, DE
     output logic [3:0] DEC_ALU_FUN;
     output logic DEC_REGWRITE, DEC_MEMWRITE, DEC_MEMREAD_2;
     output logic [1:0] DEC_RF_WR_SEL;
+    output logic [4:0] ID_EX_RS1, ID_EX_RS2, ID_EX_RD;
     
     // ----------------------------------- Decoder Setup -----------------------------------------------
     
@@ -118,6 +126,11 @@ module Decode_State(REG_CLOCK, REG_RESET, FR_MEM, FR_PC, FR_PC_4, DEC_PC_OUT, DE
         
         // 2-bit value
         DECODE_REG_4 <= RF_WR_SEL_TO_DR;
+        
+        ID_EX_RS1 <= FR_MEM[19:15];
+        ID_EX_RS2 <= FR_MEM[24:20];
+        ID_EX_RD <= FR_MEM[11:7];
+        
         end
     end
     

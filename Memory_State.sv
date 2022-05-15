@@ -22,7 +22,7 @@
 
 module Memory_State(MEM_CLOCK, MEM_RESET, ER_memWrite, ER_memRead2, ER_REG_WRITE, ER_PC_MEM, ER_PC_4, ER_ALU_OUT,
                     ER_RS2, ER_RF_WR_SEL, M_IOBUS_ADDR, M_IOBUS_OUT, M_IOBUS_WR, MEM_REG_DOUT2, MEM_REG_ALU_RESULT, MEM_REG_IR,
-                    MEM_REG_PC_4, MEM_RF_WR_SEL, MEM_REG_WRITE);
+                    MEM_REG_PC_4, MEM_RF_WR_SEL, MEM_REG_WRITE, EX_MS_RD, MS_WB_RD);
 
 // Inputs for Memory register
     input MEM_CLOCK, MEM_RESET;
@@ -30,6 +30,8 @@ module Memory_State(MEM_CLOCK, MEM_RESET, ER_memWrite, ER_memRead2, ER_REG_WRITE
     input logic ER_memWrite, ER_memRead2, ER_REG_WRITE;
     input logic [31:0] ER_PC_MEM, ER_PC_4, ER_ALU_OUT, ER_RS2;
     input logic [1:0] ER_RF_WR_SEL;
+    
+    input logic [4:0] EX_MS_RD;
 
 // Output for IOBUS_ADDR, IOBUS_OUT, IOBUS_WR
     output logic [31:0] M_IOBUS_ADDR, M_IOBUS_OUT, M_IOBUS_WR;
@@ -41,6 +43,8 @@ module Memory_State(MEM_CLOCK, MEM_RESET, ER_memWrite, ER_memRead2, ER_REG_WRITE
     output logic [31:0] MEM_REG_DOUT2, MEM_REG_ALU_RESULT, MEM_REG_IR, MEM_REG_PC_4;
     output logic [1:0] MEM_RF_WR_SEL;
     output logic MEM_REG_WRITE;
+    
+    output logic [4:0] MS_WB_RD;
     
     //----------------------------------- Memory Setup -----------------------------------------------
     
@@ -99,5 +103,7 @@ module Memory_State(MEM_CLOCK, MEM_RESET, ER_memWrite, ER_memRead2, ER_REG_WRITE
         
         //1-bit read
         MEM_REG_WRITE <= MEMORY_REG_3;
+        
+        MS_WB_RD <= EX_MS_RD;
     end
 endmodule
