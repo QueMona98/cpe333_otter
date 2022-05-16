@@ -67,6 +67,7 @@ module Memory_State(MEM_CLOCK, MEM_RESET, ER_memWrite, ER_memRead2, ER_REG_WRITE
     logic [0:3][31:0]MEMORY_REG_1;  // 32-bit values
     logic [1:0] MEMORY_REG_2;        // 2-bit value
     logic MEMORY_REG_3;              // 1-bit value
+    logic [4:0] MEMORY_REG_4;
     
     // Save the various outputs on the negative edge of the clock cycle
     always_ff @ (negedge MEM_CLOCK) begin
@@ -87,6 +88,8 @@ module Memory_State(MEM_CLOCK, MEM_RESET, ER_memWrite, ER_memRead2, ER_REG_WRITE
         
         // 1-bit value
         MEMORY_REG_3 <= ER_REG_WRITE;
+        
+        MEMORY_REG_4 <= EX_MS_RD;
         end
     end
     
@@ -104,6 +107,6 @@ module Memory_State(MEM_CLOCK, MEM_RESET, ER_memWrite, ER_memRead2, ER_REG_WRITE
         //1-bit read
         MEM_REG_WRITE <= MEMORY_REG_3;
         
-        MS_WB_RD <= EX_MS_RD;
+        MS_WB_RD <= MEMORY_REG_4;
     end
 endmodule

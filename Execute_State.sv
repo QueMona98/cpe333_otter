@@ -22,7 +22,7 @@
 
 module Execute_State(EXECUTE_CLOCK, EXECUTE_RESET, DR_J_TYPE, DR_B_TYPE, DR_I_TYPE, DR_PC_MEM, DR_RS1, DR_RS2, DR_ALU_A, DR_ALU_B, DR_ALU_FUN, JALR_TO_PC, BRANCH_TO_PC,
                      JAL_TO_PC, PCSOURCE_TO_PC, DR_REG_WRITE, DR_MEM_WRITE, DR_MEM_READ2, DR_RF_WR_SEL, DR_PC_4, EXEC_PC_4,
-                     EXEC_PC_MEM, EXEC_ALU_RESULT, EXEC_RS2, EXEC_RF_WR_SEL, EXEC_REGWRITE, EXEC_MEMWRITE, EXEC_MEMREAD2,
+                     EXEC_PC_MEM, EXEC_ALU_RESULT, EXEC_RS2, EXEC_RF_WR_SEL, EXEC_REGWRITE, EXEC_MEMWRITE, EXEC_MEMREAD2, EXEC_RD,
                      ID_EX_RD, EX_MS_RD);
 
 // Inputs for clock and reset signals
@@ -77,6 +77,7 @@ module Execute_State(EXECUTE_CLOCK, EXECUTE_RESET, DR_J_TYPE, DR_B_TYPE, DR_I_TY
     logic [0:3][31:0]EXECUTE_REG_1;  // 32-bit values
     logic [1:0] EXECUTE_REG_2;  // 2-bit value
     logic [0:2]EXECUTE_REG_3;  // 1-bit values
+    logic [4:0] EXECUTE_REG_4;
     
       // Save the various outputs on the negative edge of the clock cycle
     always_ff @ (negedge EXECUTE_CLOCK) begin
@@ -100,7 +101,7 @@ module Execute_State(EXECUTE_CLOCK, EXECUTE_RESET, DR_J_TYPE, DR_B_TYPE, DR_I_TY
         EXECUTE_REG_3[1] <= DR_MEM_WRITE;    // memWrite from Decode register
         EXECUTE_REG_3[2] <= DR_MEM_READ2;    // memRead2 from Decode register
         
-        EX_MS_RD <= ID_EX_RD; 
+        EXECUTE_REG_4 <= ID_EX_RD; 
         end
     end
     
@@ -120,5 +121,7 @@ module Execute_State(EXECUTE_CLOCK, EXECUTE_RESET, DR_J_TYPE, DR_B_TYPE, DR_I_TY
         EXEC_REGWRITE <= EXECUTE_REG_3[0];
         EXEC_MEMWRITE <= EXECUTE_REG_3[1];
         EXEC_MEMREAD2 <= EXECUTE_REG_3[2];
+        
+        EX_MS_RD <= EXECUTE_REG_4;
     end
     endmodule

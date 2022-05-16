@@ -51,13 +51,15 @@ module Pipelined_MCU(RST, CLK, IOBUS_IN, IOBUS_WR, IOBUS_OUT, IOBUS_ADDR);
     logic Decoder_regWrite, Decoder_memWrite, Decoder_memRead2;
     logic [1:0] Decoder_rf_wr_sel;
     logic [4:0] ID_EX_RS1, ID_EX_RS2, ID_EX_RD;
+    logic [31:0] EX_MS_RD_Value, MS_WB_RD_Value;
     
     Decode_State DS (.REG_CLOCK(CLK), .REG_RESET(RST), .FR_MEM(Fetch_reg_dout1), .FR_PC(Fetch_reg_pc), .FR_PC_4(Fetch_reg_PC_4), // Inputs 
                     .DEC_PC_OUT(Decoder_PC_4), .DEC_ALU_A(Decoder_ALU_A), .DEC_ALU_B(Decoder_ALU_B), .DEC_J_TYPE(Decoder_J_type), // Outputs
                     .DEC_B_TYPE(Decoder_B_type), .DEC_I_TYPE(Decoder_I_type), .DEC_MEM_IR(Decoder_dout1), .DEC_ALU_FUN(Decoder_alu_fun), 
                     .DEC_REGWRITE(Decoder_regWrite), .DEC_MEMWRITE(Decoder_memWrite), .DEC_MEMREAD_2(Decoder_memRead2),
                     .DEC_RF_WR_SEL(Decoder_rf_wr_sel), .DEC_RS1(Decoder_rs1), .DEC_RS2(Decoder_rs2),
-                    .ID_EX_RS1(ID_EX_RS1), .ID_EX_RS2(ID_EX_RS2), .ID_EX_RD(ID_EX_RD), .OVERRIDE_A(OVERRIDE_A), .OVERRIDE_B(OVERRIDE_B));
+                    .ID_EX_RS1(ID_EX_RS1), .ID_EX_RS2(ID_EX_RS2), .ID_EX_RD(ID_EX_RD), .OVERRIDE_A(OVERRIDE_A), .OVERRIDE_B(OVERRIDE_B),
+                    .Forward1(Execute_alu_out), .Forward2(Memory_alu_out));
                     
     // --------------------------------- Execute State Setup-----------------------------------------------
     
@@ -98,10 +100,8 @@ module Pipelined_MCU(RST, CLK, IOBUS_IN, IOBUS_WR, IOBUS_OUT, IOBUS_ADDR);
    // --------------------------------- Writeback State Setup-----------------------------------------------
    
    Writeback_State WS (.MR_dout2(Memory_dout2), .MR_alu_result(Memory_alu_out), .MR_ir(Memory_dout1), .MR_PC_4(Memory_PC_4), // Inputs
-                       .MR_rf_wr_sel(Memory_rf_wr_sel), .MR_regWrite(Memory_regWrite));     
-                       
-                       
-        
+                       .MR_rf_wr_sel(Memory_rf_wr_sel), .MR_regWrite(Memory_regWrite));
+                               
    // --------------------------------- Forwarding Unit -----------------------------------------------
 
    logic [1:0] OVERRIDE_A;
