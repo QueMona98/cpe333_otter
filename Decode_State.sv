@@ -22,20 +22,16 @@
 
 module Decode_State(REG_CLOCK, REG_RESET, FR_MEM, FR_PC, FR_PC_4, DEC_PC_OUT, DEC_ALU_A, DEC_ALU_B, DEC_J_TYPE, DEC_B_TYPE,
                     DEC_MEM_IR, DEC_ALU_FUN, DEC_REGWRITE, DEC_MEMWRITE, DEC_MEMREAD_2, DEC_RF_WR_SEL, DEC_I_TYPE, DEC_RS1, DEC_RS2,
-                    ID_EX_RS1, ID_EX_RS2, ID_EX_RD, OVERRIDE_A, OVERRIDE_B, Forward1, Forward2);
+                    ID_EX_RS1, ID_EX_RS2, ID_EX_RD, ID_EX_Controls_Sel);
                     
     // Inputs for register file
     input logic REG_CLOCK, REG_RESET;
     
+    input logic ID_EX_Controls_Sel;
+    
     // 32-bit outputs from Fetch Register
     input logic [31:0] FR_MEM, FR_PC, FR_PC_4;
-    
-    // Input for overriding MUXES
-    input logic [1:0] OVERRIDE_A;
-    input logic [2:0] OVERRIDE_B;
-    
-    input logic [31:0] Forward1, Forward2;
-    
+        
     // Wires for outputs of Decoder that go to Decode Register
     logic REGWRITE_TO_DR, MEMWRITE_TO_DR, MEMREAD2_TO_DR;
     logic [3:0] ALU_FUN_TO_DR;
@@ -52,7 +48,11 @@ module Decode_State(REG_CLOCK, REG_RESET, FR_MEM, FR_PC, FR_PC_4, DEC_PC_OUT, DE
     logic [31:0] U_TYPE, I_TYPE, S_TYPE, J_TYPE, B_TYPE;
     
     // Wires for output of MUXes to enter Decoder Register
-    logic [31:0] ALU_A_TO_DR, ALU_B_TO_DR, FINAL_ALU_A_TO_DR, FINAL_ALU_B_TO_DR;
+    logic [31:0] ALU_A_TO_DR, ALU_B_TO_DR;
+    
+    logic [2:0] ID_EX_Controls; // ID_EX_Controls[0] -> regWrite 
+                                // ID_EX_Controls[1] -> memWrite 
+                                // ID_EX_Controls[2] -> memRead2
     
     // Outputs of Decode register 
     output logic [31:0] DEC_PC_OUT, DEC_ALU_A, DEC_ALU_B, DEC_J_TYPE, DEC_B_TYPE, DEC_I_TYPE, DEC_MEM_IR, DEC_RS1, DEC_RS2;
@@ -84,18 +84,10 @@ module Decode_State(REG_CLOCK, REG_RESET, FR_MEM, FR_PC, FR_PC_4, DEC_PC_OUT, DE
    ALU_MUX_srcB MUX_B (.REG_rs2(REG_FILE_RS2), .IMM_GEN_I_Type(I_TYPE), .IMM_GEN_S_Type(S_TYPE), .PC_OUT(FR_PC),
    .alu_srcB(ALU_B), .srcB(ALU_B_TO_DR));
 
-   // ----------------------------------- ALU_A Override Setup -----------------------------------------------
-
-    Mult4to1 MUX_OVERRIDE_A (.In1(ALU_A_TO_DR), .In2(Forward1), .In3(Forward2),
-    .In4(), .Sel(OVERRIDE_A ), .Out(FINAL_ALU_A_TO_DR ));
-
-
-   // ----------------------------------- ALU_B Override Setup -----------------------------------------------
-  
-    Mult4to1 MUX_OVERRIDE_B (.In1(ALU_B_TO_DR), .In2(Forward1), .In3(Forward2),
-    .In4(), .Sel(OVERRIDE_B), .Out(FINAL_ALU_B_TO_DR));
-
-
+   // ----------------------------------- Hazard Detection MUX Setup -----------------------------------------------
+    Mult2to1 MUX_HDU( .In1(0), .In2({REGWRITE_TO_DR, MEMWRITE_TO_DR, MEMREAD2_TO_DR}), .Sel(ID_EX_Controls_Sel),
+    .Out(ID_EX_Controls));
+   
    // ----------------------------------- Decode Register Setup -----------------------------------------------
    
     // Initialize DECODE_REG to hold ten values: 32-bit: Incremented PC from Fetch register, Output of ALU_A,
@@ -166,9 +158,9 @@ module Decode_State(REG_CLOCK, REG_RESET, FR_MEM, FR_PC, FR_PC_4, DEC_PC_OUT, DE
 
     
     // Single-bit reads
-    DEC_REGWRITE  <= DECODE_REG_2[0];
-    DEC_MEMWRITE  <= DECODE_REG_2[1];
-    DEC_MEMREAD_2 <= DECODE_REG_2[2];
+    DEC_REGWRITE  <= ID_EX_Controls[3];
+    DEC_MEMWRITE  <= ID_EX_Controls[2];
+    DEC_MEMREAD_2 <= ID_EX_Controls[1];
     
     // 4-bit read
     DEC_ALU_FUN <= DECODE_REG_3;

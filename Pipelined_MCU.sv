@@ -34,14 +34,11 @@ module Pipelined_MCU(RST, CLK, IOBUS_IN, IOBUS_WR, IOBUS_OUT, IOBUS_ADDR);
  // Logics to connect PC MUX inputs from Execute state
  logic [31:0] Execute_jalr_to_MUX, Execute_branch_to_MUX, Execute_jal_to_MUX;
  
- // Temporary logic for PC_WRITE
- logic pc_write;
- assign pc_write = 1'b1;
     // --------------------------------- Fetch State Setup-----------------------------------------------
     
     Fetch_State FS (.CLOCK(CLK), .RESET(RST), .FETCH_REG_OUT(Fetch_reg_dout1), .FETCH_REG_PC(Fetch_reg_pc),
     .FETCH_REG_PC_4(Fetch_reg_PC_4), .MUX_JALR(Execute_jalr_to_MUX), .MUX_BRANCH(Execute_branch_to_MUX), 
-    .MUX_JAL(Execute_jal_to_MUX), .PC_WRITE(pc_write), .PC_SOURCE(pcsource_to_pc));
+    .MUX_JAL(Execute_jal_to_MUX), .PC_WRITE(pc_write), .PC_SOURCE(pcsource_to_pc), .IF_ID_Write(IF_ID_Write));
     
     // --------------------------------- Decode State Setup-----------------------------------------------
 
@@ -58,8 +55,8 @@ module Pipelined_MCU(RST, CLK, IOBUS_IN, IOBUS_WR, IOBUS_OUT, IOBUS_ADDR);
                     .DEC_B_TYPE(Decoder_B_type), .DEC_I_TYPE(Decoder_I_type), .DEC_MEM_IR(Decoder_dout1), .DEC_ALU_FUN(Decoder_alu_fun), 
                     .DEC_REGWRITE(Decoder_regWrite), .DEC_MEMWRITE(Decoder_memWrite), .DEC_MEMREAD_2(Decoder_memRead2),
                     .DEC_RF_WR_SEL(Decoder_rf_wr_sel), .DEC_RS1(Decoder_rs1), .DEC_RS2(Decoder_rs2),
-                    .ID_EX_RS1(ID_EX_RS1), .ID_EX_RS2(ID_EX_RS2), .ID_EX_RD(ID_EX_RD), .OVERRIDE_A(OVERRIDE_A), .OVERRIDE_B(OVERRIDE_B),
-                    .Forward1(Execute_alu_out), .Forward2(Memory_alu_out));
+                    .ID_EX_RS1(ID_EX_RS1), .ID_EX_RS2(ID_EX_RS2), .ID_EX_RD(ID_EX_RD),
+                    .ID_EX_Controls_Sel(ID_EX_Controls_Sel));
                     
     // --------------------------------- Execute State Setup-----------------------------------------------
     
@@ -79,7 +76,8 @@ module Pipelined_MCU(RST, CLK, IOBUS_IN, IOBUS_WR, IOBUS_OUT, IOBUS_ADDR);
                       .EXEC_MEMWRITE(Execute_memWrite), .EXEC_MEMREAD2(Execute_memRead2), 
                       .JALR_TO_PC(Execute_jalr_to_MUX ), .JAL_TO_PC(Execute_jal_to_MUX), 
                       .BRANCH_TO_PC(Execute_branch_to_MUX), .PCSOURCE_TO_PC(pcsource_to_pc),  // Outputs to PC in Fetch State
-                      .ID_EX_RD(ID_EX_RD), .EX_MS_RD(EX_MS_RD));
+                      .ID_EX_RD(ID_EX_RD), .EX_MS_RD(EX_MS_RD),.OVERRIDE_A(OVERRIDE_A), .OVERRIDE_B(OVERRIDE_B),
+                      .Forward1(Memory_alu_out), .Forward2(Execute_alu_out));
                       
     // --------------------------------- Memory State Setup-----------------------------------------------
     
@@ -102,14 +100,24 @@ module Pipelined_MCU(RST, CLK, IOBUS_IN, IOBUS_WR, IOBUS_OUT, IOBUS_ADDR);
    Writeback_State WS (.MR_dout2(Memory_dout2), .MR_alu_result(Memory_alu_out), .MR_ir(Memory_dout1), .MR_PC_4(Memory_PC_4), // Inputs
                        .MR_rf_wr_sel(Memory_rf_wr_sel), .MR_regWrite(Memory_regWrite));
                                
-   // --------------------------------- Forwarding Unit -----------------------------------------------
+   // --------------------------------- Forwarding Unit Setup -----------------------------------------------
 
    logic [1:0] OVERRIDE_A;
-   logic [2:0] OVERRIDE_B;
+   logic [1:0] OVERRIDE_B;
    
-   Foward_Unit foward_unit( .Execute_Register_SourceRegister_1(ID_EX_RS1), .Execute_Register_SourceRegister_2(ID_EX_RS2),
-                            .Memory_Register_value(EX_MS_RD), .WriteBack_Register_IOBUSaddr_value(MS_WB_RD), .CLK(CLK),
-                            .mux_srcA_priority_foward(OVERRIDE_A), .mux_srcB_priority_foward(OVERRIDE_B),
-                            .EX_MS_regWrite(Execute_regWrite), .MS_WV_regWrite(Memory_regWrite));
-    
+   Forward_Unit FU ( .ID_EX_RS1(ID_EX_RS1), .ID_EX_RS2(ID_EX_RS2),
+                    .EX_MS_RD(EX_MS_RD), .MS_WB_RD(MS_WB_RD),
+                    .A_override(OVERRIDE_A), .B_override(OVERRIDE_B),
+                    .EX_MS_regWrite(Execute_regWrite), .MS_WB_regWrite(Memory_regWrite));
+                    
+   // --------------------------------- Load Use Hazard Detection Unit Setup -----------------------------------------------
+   
+   logic ID_EX_Controls_Sel;
+   logic pc_write;
+   logic IF_ID_Write;
+   
+   Hazard_Detector HDU (.ID_EX_MemRead(Decoder_memRead2),
+                        .IF_ID_RS1(Fetch_reg_dout1[19:15]), .IF_ID_RS2(Fetch_reg_dout1[24:20]), .ID_EX_RS2(ID_EX_RS2),
+                        .select(ID_EX_Controls_Sel), .PCWrite(pc_write), .IF_ID_Write(IF_ID_Write));
+
 endmodule

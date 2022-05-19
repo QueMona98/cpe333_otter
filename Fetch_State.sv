@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 module Fetch_State(CLOCK, RESET, PC_WRITE, PC_SOURCE, MUX_JALR, MUX_JAL, MUX_BRANCH, PC_OUT, PC_PLUS_4, MEM_READ_1, MEM_IR,
-FETCH_REG_OUT, FETCH_REG_PC, FETCH_REG_PC_4);
+FETCH_REG_OUT, FETCH_REG_PC, FETCH_REG_PC_4, IF_ID_Write);
 
     // Inputs for PC and MEM
     input CLOCK, RESET;
@@ -10,6 +10,7 @@ FETCH_REG_OUT, FETCH_REG_PC, FETCH_REG_PC_4);
     input logic  PC_WRITE;
     input logic [1:0]PC_SOURCE;
     input logic [31:0] MUX_JALR, MUX_BRANCH, MUX_JAL;
+    input logic IF_ID_Write;
         
     // Logic for MUX to PC
     logic [31:0] MUX_to_PC;
@@ -22,12 +23,13 @@ FETCH_REG_OUT, FETCH_REG_PC, FETCH_REG_PC_4);
     
     // Input for MEM
     input logic MEM_READ_1;
+    
     // Set MEM_READ_1 as high
     assign MEM_READ_1 = 1'b1;
     
     // Outputs of Fetch register
     output logic [31:0] FETCH_REG_OUT, FETCH_REG_PC, FETCH_REG_PC_4;
-    
+        
     // --------------------------------- Program Counter Setup----------------------------------------
     // Incrementer for Program Count (PC + 4)
     PC_4 PC_Increment (.Program_count(PC_OUT), .PC_4(PC_PLUS_4));
@@ -62,7 +64,7 @@ FETCH_REG_OUT, FETCH_REG_PC, FETCH_REG_PC_4);
         if (RESET == 1'b1) begin
             FETCH_REG <= 3'b000;
         end
-        else begin
+        else if (IF_ID_Write != 0)begin
             FETCH_REG_OUT <= FETCH_REG[0];
             FETCH_REG_PC <= FETCH_REG[1];
             FETCH_REG_PC_4 <= FETCH_REG[2];

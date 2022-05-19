@@ -19,22 +19,15 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module HazardDetector(
-    input CLK,
-    input logic [31:0] ID_EX_MemRead,
-    input logic [31:0] instruction,
-    input logic [4:0] ID_EX_RS2,
+module Hazard_Detector(
+    input logic ID_EX_MemRead,
+    input logic [4:0] IF_ID_RS1, IF_ID_RS2, ID_EX_RS2,
     output logic select,
     output logic PCWrite,
     output logic IF_ID_Write
     );
-    
-    logic [4:0] IF_ID_RS1, IF_ID_RS2;
-    
-    assign IF_ID_RS1 = instruction[19:15];  // fix
-    assign IF_ID_RS2 = instruction [19:15];
-    
-    always_ff @(posedge CLK) begin
+            
+    always_comb begin
         
         // data hazard
         // Note: only detecting load-use hazard because forwarding is implemented

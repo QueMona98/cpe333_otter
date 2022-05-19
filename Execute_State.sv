@@ -22,8 +22,8 @@
 
 module Execute_State(EXECUTE_CLOCK, EXECUTE_RESET, DR_J_TYPE, DR_B_TYPE, DR_I_TYPE, DR_PC_MEM, DR_RS1, DR_RS2, DR_ALU_A, DR_ALU_B, DR_ALU_FUN, JALR_TO_PC, BRANCH_TO_PC,
                      JAL_TO_PC, PCSOURCE_TO_PC, DR_REG_WRITE, DR_MEM_WRITE, DR_MEM_READ2, DR_RF_WR_SEL, DR_PC_4, EXEC_PC_4,
-                     EXEC_PC_MEM, EXEC_ALU_RESULT, EXEC_RS2, EXEC_RF_WR_SEL, EXEC_REGWRITE, EXEC_MEMWRITE, EXEC_MEMREAD2, EXEC_RD,
-                     ID_EX_RD, EX_MS_RD);
+                     EXEC_PC_MEM, EXEC_ALU_RESULT, EXEC_RS2, EXEC_RF_WR_SEL, EXEC_REGWRITE, EXEC_MEMWRITE, EXEC_MEMREAD2,
+                     ID_EX_RD, EX_MS_RD, OVERRIDE_A, OVERRIDE_B, Forward1, Forward2);
 
 // Inputs for clock and reset signals
     input EXECUTE_CLOCK, EXECUTE_RESET;
@@ -44,8 +44,16 @@ module Execute_State(EXECUTE_CLOCK, EXECUTE_RESET, DR_J_TYPE, DR_B_TYPE, DR_I_TY
     
     input logic [4:0] ID_EX_RD;
     
+   // Input for overriding ALU Input
+    input logic [1:0] OVERRIDE_A;
+    input logic [1:0] OVERRIDE_B;
+    
+    input logic [31:0] Forward1, Forward2;
+    
 // Logics for outputs of ALU and rs2
     logic [31:0] ALU_OUT_TO_REG;
+    
+    logic [31:0] FINAL_ALU_A, FINAL_ALU_B;
 
 // Outputs for Target Gen + Branch Condititon Generator
     output logic [31:0] JALR_TO_PC, BRANCH_TO_PC, JAL_TO_PC;
@@ -65,8 +73,18 @@ module Execute_State(EXECUTE_CLOCK, EXECUTE_RESET, DR_J_TYPE, DR_B_TYPE, DR_I_TY
     // ----------------------------------- Branch Cond. Gen Setup -----------------------------------------------
     Brand_Cond_Gen BC_Generator (.REG_INPUTA(DR_RS1), .REG_INPUTB(DR_RS2), .DR_MEM_OUT(DR_PC_MEM), .PC_SOURCE_OUT(PCSOURCE_TO_PC));
     
+    // ----------------------------------- ALU_A Override Setup -----------------------------------------------
+
+    Mult4to1 MUX_OVERRIDE_A (.In1(DR_ALU_A), .In2(Forward1), .In3(Forward2),
+    .In4(), .Sel(OVERRIDE_A ), .Out(FINAL_ALU_A));
+
+     // ----------------------------------- ALU_B Override Setup -----------------------------------------------
+  
+    Mult4to1 MUX_OVERRIDE_B (.In1(DR_ALU_B), .In2(Forward1), .In3(Forward2),
+    .In4(), .Sel(OVERRIDE_B), .Out(FINAL_ALU_B));
+
     // ----------------------------------- ALU Setup -----------------------------------------------
-    ALU_HW_4 Execute_ALU (.ALU_A(DR_ALU_A), .ALU_B(DR_ALU_B), .ALU_FUN(DR_ALU_FUN), .RESULT(ALU_OUT_TO_REG));
+    ALU_HW_4 Execute_ALU (.ALU_A(FINAL_ALU_A), .ALU_B(FINAL_ALU_B), .ALU_FUN(DR_ALU_FUN), .RESULT(ALU_OUT_TO_REG));
 
     // ----------------------------------- Execute Register Setup -----------------------------------------------
     // Initalize Execute Register to hold the following values:
@@ -85,6 +103,7 @@ module Execute_State(EXECUTE_CLOCK, EXECUTE_RESET, DR_J_TYPE, DR_B_TYPE, DR_I_TY
         EXECUTE_REG_1 <= 0;
         EXECUTE_REG_2 <= 0;
         EXECUTE_REG_3 <= 0;
+        EXECUTE_REG_4 <= 0;
     end
     else begin
         // 32-bit values

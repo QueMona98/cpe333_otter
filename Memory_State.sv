@@ -75,6 +75,7 @@ module Memory_State(MEM_CLOCK, MEM_RESET, ER_memWrite, ER_memRead2, ER_REG_WRITE
         MEMORY_REG_1 <= 0;
         MEMORY_REG_2 <= 0;
         MEMORY_REG_3 <= 0;
+        MEMORY_REG_4 <= 0;
     end
     else begin
         // 32-bit values
