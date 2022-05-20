@@ -21,7 +21,7 @@
 
 
 //Log:
-//Need to put in the forwarding unit and other hazards zontrol
+//Need to put in the forwarding unit and other hazards zontrol 05/19/22
 module otter_mcu_pipeline(
     input CLOCK,
     input INTR,
@@ -52,6 +52,7 @@ module otter_mcu_pipeline(
     
     // Set MEM_READ_1 as high
     assign MEM_READ_1 = 1'b1;
+    assign PC_WRITE = 1; //WATCH OUT FOR THIS
     
     // Outputs of Fetch register
     logic [31:0] FETCH_REG_OUT, FETCH_REG_PC, FETCH_REG_PC_4;
@@ -138,8 +139,6 @@ module otter_mcu_pipeline(
     
 //    logic [4:0] EX_MS_RD;
 
-// Output for IOBUS_ADDR, IOBUS_OUT, IOBUS_WR
-    logic [31:0] IOBUS_ADDR, IOBUS_OUT, IOBUS_WR;
 
 // Wire for Memory dout2
     logic [31:0] DOUT2_TO_MEM_REG;
@@ -322,11 +321,11 @@ module otter_mcu_pipeline(
 
 //Execute
     // ----------------------------------- Target Gen Setup -----------------------------------------------
-    Branch_Addr_Gen_HW_5 Target_Gen (.PC_COUNT(DR_PC_MEM), .J_INPUT(DR_J_TYPE), .B_INPUT(DR_B_TYPE), .I_INPUT(DR_I_TYPE),
+    Branch_Addr_Gen_HW_5 Target_Gen (.PC_COUNT(DR_PC_MEM), .J_INPUT(J_TYPE), .B_INPUT(B_TYPE), .I_INPUT(I_TYPE),
                                     .RS1_INPUT(DR_RS1), .JALR_OUT(JALR_TO_PC), .BRANCH_OUT(BRANCH_TO_PC), .JAL_OUT(JAL_TO_PC));
    
     // ----------------------------------- Branch Cond. Gen Setup -----------------------------------------------
-    Brand_Cond_Gen BC_Generator (.REG_INPUTA(DR_RS1), .REG_INPUTB(DR_RS2), .DR_MEM_OUT(DR_PC_MEM), .PC_SOURCE_OUT(PCSOURCE_TO_PC));
+    Brand_Cond_Gen BC_Generator (.REG_INPUTA(DR_RS1), .REG_INPUTB(DR_RS2), .DR_MEM_OUT(DR_PC_MEM), .PC_SOURCE_OUT(PC_SOURCE));
     
     // ----------------------------------- ALU_A Override Setup -----------------------------------------------
 
