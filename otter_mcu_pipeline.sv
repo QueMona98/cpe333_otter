@@ -37,6 +37,8 @@ module otter_mcu_pipeline(
     logic [1:0]PC_SOURCE;
     logic [31:0] MUX_JALR, MUX_BRANCH, MUX_JAL;
     logic IF_ID_Write;
+    
+    assign IF_ID_Write = 1;
         
     // Logic for MUX to PC
     logic [31:0] MUX_to_PC;
@@ -56,7 +58,7 @@ module otter_mcu_pipeline(
     
     // Outputs of Fetch register
     logic [31:0] FETCH_REG_OUT, FETCH_REG_PC, FETCH_REG_PC_4;
-//Initiliazation for Decode-----------------------------------------------------------------------------
+    // Initiliazation for Decode-----------------------------------------------------------------------------
     // Inputs for register file
     logic ID_EX_Controls_Sel;
     
@@ -179,7 +181,9 @@ module otter_mcu_pipeline(
     //----------------------------------- Memory Setup -----------------------------------------------
     
     // Memory Module setup (only look at bits [15:2] of the output for PC
-    Memory Mem_Module (.MEM_CLK(CLOCK), .MEM_ADDR1(PC_OUT[15:2]), .MEM_RDEN1(MEM_READ_1), .MEM_DOUT1(MEM_IR));
+    Memory Mem_Module (.MEM_CLK(CLOCK), .MEM_ADDR1(PC_OUT[15:2]), .MEM_RDEN1(MEM_READ_1), .MEM_DOUT1(MEM_IR),
+                       .MEM_ADDR2(ER_ALU_OUT), .MEM_DIN2(ER_RS2), .MEM_WE2(ER_memWrite), .MEM_RDEN2(ER_memRead2), 
+                       .MEM_SIZE(ER_PC_MEM[14:12]), .IO_WR(IOBUS_WR), .MEM_DOUT2(DOUT2_TO_MEM_REG));
     
     // Fetch Register for Pipeline Setup (write output of Memory to Fetch Register on negative clock cycle)
     
@@ -187,11 +191,11 @@ module otter_mcu_pipeline(
     logic [0:2][31:0]FETCH_REG;
     
     // Save the value of the output of the Memory module and PC+4 to the Fetch Register on negative clock cycle
-    always_ff @ (negedge CLOCK) begin
-        FETCH_REG[0] <= MEM_IR;
-        FETCH_REG[1] <= PC_OUT;
-        FETCH_REG[2] <= PC_PLUS_4;
-    end 
+//    always_ff @ (negedge CLOCK) begin
+//        FETCH_REG[0] <= MEM_IR;
+//        FETCH_REG[1] <= PC_OUT;
+//        FETCH_REG[2] <= PC_PLUS_4;
+//    end 
     
     // Reading from the Fetch register should happen on the positive edge of the clock 
     always_ff @ (posedge CLOCK) begin
@@ -199,25 +203,26 @@ module otter_mcu_pipeline(
             FETCH_REG <= 3'b000;
         end
         else if (IF_ID_Write != 0)begin
-            FETCH_REG_OUT <= FETCH_REG[0];
-            FETCH_REG_PC <= FETCH_REG[1];
-            FETCH_REG_PC_4 <= FETCH_REG[2];
+            FETCH_REG_OUT <= MEM_IR;
+            FETCH_REG_PC <= PC_OUT;
+            FETCH_REG_PC_4 <= PC_PLUS_4;
         end
     end
 
 //Decode
  // ----------------------------------- Decoder Setup -----------------------------------------------
     
-    cu_decoder Decoder (.IR_FETCH_REG(FR_MEM), .ALU_FUN(ALU_FUN_TO_DR), .ALU_SOURCE_A(ALU_A), .ALU_SOURCE_B(ALU_B), 
+    cu_decoder Decoder (.IR_FETCH_REG(FETCH_REG_OUT), .ALU_FUN(ALU_FUN_TO_DR), .ALU_SOURCE_A(ALU_A), .ALU_SOURCE_B(ALU_B), 
     .RF_WR_SEL(RF_WR_SEL_TO_DR), .REG_WRITE(REGWRITE_TO_DR), .MEM_WRITE(MEMWRITE_TO_DR), .MEM_READ_2(MEMREAD2_TO_DR));
     
     // ----------------------------------- Register File Setup -----------------------------------------------
     
-   Register_File_HW_3 Reg_File (.CLOCK(CLOCK), .input_reg(FR_MEM), .RF_RS1(REG_FILE_RS1), .RF_RS2(REG_FILE_RS2));
+   Register_File_HW_3 Reg_File (.CLOCK(CLOCK), .input_reg(FETCH_REG_OUT), .RF_RS1(REG_FILE_RS1),
+                                .RF_RS2(REG_FILE_RS2), .WD(MUX_OUT_TO_REG_FILE), .ENABLE(MR_regWrite));
    
        // ----------------------------------- Immediate Generator Setup -----------------------------------------------
        
-   Imm_Gen IG (.IR_INPUT(FR_MEM), .U_TYPE_OUT(U_TYPE), .I_TYPE_OUT(I_TYPE), .S_TYPE_OUT(S_TYPE), .J_TYPE_OUT(J_TYPE),
+   Imm_Gen IG (.IR_INPUT(FETCH_REG_OUT), .U_TYPE_OUT(U_TYPE), .I_TYPE_OUT(I_TYPE), .S_TYPE_OUT(S_TYPE), .J_TYPE_OUT(J_TYPE),
    .B_TYPE_OUT(B_TYPE));
 
        // ----------------------------------- ALU_A Setup -----------------------------------------------
@@ -230,8 +235,8 @@ module otter_mcu_pipeline(
    .alu_srcB(ALU_B), .srcB(ALU_B_TO_DR));
 
    // ----------------------------------- Hazard Detection MUX Setup -----------------------------------------------
-    Mult2to1 MUX_HDU( .In1(0), .In2({REGWRITE_TO_DR, MEMWRITE_TO_DR, MEMREAD2_TO_DR}), .Sel(ID_EX_Controls_Sel),
-    .Out(ID_EX_Controls));
+//    Mult2to1 MUX_HDU( .In1(0), .In2({REGWRITE_TO_DR, MEMWRITE_TO_DR, MEMREAD2_TO_DR}), .Sel(ID_EX_Controls_Sel),
+//    .Out(ID_EX_Controls));
    
    // ----------------------------------- Decode Register Setup -----------------------------------------------
    
@@ -287,7 +292,7 @@ module otter_mcu_pipeline(
         end
     end
     
-    // Reading from the Fetch register should happen on the positive edge of the clock 
+    // Reading from the Decode register should happen on the positive edge of the clock 
     always_ff @ (posedge CLOCK) begin
     
     // 32-bit reads
@@ -329,16 +334,16 @@ module otter_mcu_pipeline(
     
     // ----------------------------------- ALU_A Override Setup -----------------------------------------------
 
-    Mult4to1 MUX_OVERRIDE_A (.In1(DR_ALU_A), .In2(Forward1), .In3(Forward2),
-    .In4(), .Sel(OVERRIDE_A ), .Out(FINAL_ALU_A));
+//    Mult4to1 MUX_OVERRIDE_A (.In1(DR_ALU_A), .In2(Forward1), .In3(Forward2),
+//    .In4(), .Sel(OVERRIDE_A ), .Out(FINAL_ALU_A));
 
      // ----------------------------------- ALU_B Override Setup -----------------------------------------------
   
-    Mult4to1 MUX_OVERRIDE_B (.In1(DR_ALU_B), .In2(Forward1), .In3(Forward2),
-    .In4(), .Sel(OVERRIDE_B), .Out(FINAL_ALU_B));
+//    Mult4to1 MUX_OVERRIDE_B (.In1(DR_ALU_B), .In2(Forward1), .In3(Forward2),
+//    .In4(), .Sel(OVERRIDE_B), .Out(FINAL_ALU_B));
 
     // ----------------------------------- ALU Setup -----------------------------------------------
-    ALU_HW_4 Execute_ALU (.ALU_A(FINAL_ALU_A), .ALU_B(FINAL_ALU_B), .ALU_FUN(DR_ALU_FUN), .RESULT(ALU_OUT_TO_REG));
+    ALU_HW_4 Execute_ALU (.ALU_A(DEC_ALU_A), .ALU_B(DEC_ALU_B), .ALU_FUN(DR_ALU_FUN), .RESULT(ALU_OUT_TO_REG));
 
     // ----------------------------------- Execute Register Setup -----------------------------------------------
     // Initalize Execute Register to hold the following values:
