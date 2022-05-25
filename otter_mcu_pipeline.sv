@@ -41,12 +41,8 @@ module otter_mcu_pipeline(
     
     // Set to 1
     assign MEM_READ_1 = 1'b1;
-//    assign PC_WRITE = 1;
-//    assign IF_ID_Write = 1;
-
-    // Fetch stage registers
-    logic [31:0] FETCH_REG_OUT, FETCH_REG_PC, FETCH_REG_PC_4;
-    
+    assign PC_WRITE = 1;
+        
     // Incrementer for Program Count (PC + 4)
     PC_4 PC_Increment (.Program_count(PC_OUT), .PC_4(PC_PLUS_4));
     
@@ -57,6 +53,9 @@ module otter_mcu_pipeline(
     // 4 Option MUX
     PC_MUX Prog_Count_MUX (.MUX_SEL(PCSOURCE_TO_PC), .PC_4(PC_PLUS_4), .JALR(MUX_JALR),
     .BRANCH(MUX_BRANCH), .JAL(MUX_JAL), .MUX_OUT(MUX_to_PC));
+
+    // Fetch stage registers
+    logic [31:0] FETCH_REG_OUT, FETCH_REG_PC, FETCH_REG_PC_4;
 
     always_ff @ (posedge CLOCK) begin
         if (RESET == 1'b1) begin
@@ -72,7 +71,6 @@ module otter_mcu_pipeline(
     end
    
 // ---------------------------------------------- DECODE Stage ---------------------------------------------- 
-    logic ID_EX_Controls_Sel;
     logic REGWRITE_TO_DR, MEMWRITE_TO_DR, MEMREAD2_TO_DR;
     logic [1:0] RF_WR_SEL_TO_DR;
     logic ALU_A;
@@ -80,16 +78,12 @@ module otter_mcu_pipeline(
     logic [31:0] REG_FILE_RS1, REG_FILE_RS2;
     logic [31:0] U_TYPE, I_TYPE, S_TYPE, J_TYPE, B_TYPE;
     logic [31:0] ALU_A_TO_DR, ALU_B_TO_DR;
-    logic [2:0] ID_EX_Controls; // ID_EX_Controls[0] -> regWrite 
-                                // ID_EX_Controls[1] -> memWrite 
-                                // ID_EX_Controls[2] -> memRead2
     
     // Decode stage registers
     logic [31:0] DEC_PC_OUT, DEC_PC_4, DEC_ALU_A, DEC_ALU_B, DEC_J_TYPE, DEC_B_TYPE, DEC_I_TYPE, DEC_MEM_IR, DEC_RS1, DEC_RS2;
     logic [3:0] DEC_ALU_FUN;
     logic DEC_REGWRITE, DEC_MEMWRITE, DEC_MEMREAD2;
     logic [1:0] DEC_RF_WR_SEL;
-    logic [4:0] ID_EX_RS1, ID_EX_RS2, ID_EX_RD;
  
     cu_decoder Decoder (.IR_FETCH_REG(FETCH_REG_OUT), .ALU_FUN(DR_ALU_FUN), .ALU_SOURCE_A(ALU_A), .ALU_SOURCE_B(ALU_B), 
     .RF_WR_SEL(RF_WR_SEL_TO_DR), .REG_WRITE(REGWRITE_TO_DR), .MEM_WRITE(MEMWRITE_TO_DR), .MEM_READ_2(MEMREAD2_TO_DR));
@@ -101,15 +95,7 @@ module otter_mcu_pipeline(
       
    ALU_MUX_srcB MUX_B (.REG_rs2(REG_FILE_RS2), .IMM_GEN_I_Type(I_TYPE), .IMM_GEN_S_Type(S_TYPE), .PC_OUT(FETCH_REG_PC),
                        .alu_srcB(ALU_B), .srcB(ALU_B_TO_DR));
-    
-    // Hazard Detection MUX Setup
-   Mult2to1 MUX_HDU( .In1(0), .In2({REGWRITE_TO_DR, MEMWRITE_TO_DR, MEMREAD2_TO_DR}),
-                     .Sel(ID_EX_Controls_Sel), .Out(ID_EX_Controls));
-                     
-   Hazard_Detector HDU (.ID_EX_MemRead(Decoder_memRead2),
-                        .IF_ID_RS1(FETCH_REG_OUT[19:15]), .IF_ID_RS2(FETCH_REG_OUT [24:20]), .ID_EX_RS2(ID_EX_RS2),
-                        .select(ID_EX_Controls_Sel), .PCWrite(PC_WRITE), .IF_ID_Write(IF_ID_Write));
-                           
+           
     always_ff @ (posedge CLOCK) begin
         if (RESET == 1'b1) begin
             DEC_PC_OUT <= 0;
@@ -129,10 +115,6 @@ module otter_mcu_pipeline(
             DEC_ALU_FUN <= 0;
             
             DEC_RF_WR_SEL <= 0;
-            
-            ID_EX_RS1 <= 0;
-            ID_EX_RS2 <= 0;
-            ID_EX_RD <= 0;            
         end
         else begin
             DEC_PC_OUT <= FETCH_REG_PC;
@@ -145,27 +127,20 @@ module otter_mcu_pipeline(
             DEC_I_TYPE <= I_TYPE;
             DEC_RS1 <= REG_FILE_RS1;
             DEC_RS2 <= REG_FILE_RS2;
-            
-            DEC_REGWRITE  <= ID_EX_Controls[2];
-            DEC_MEMWRITE  <= ID_EX_Controls[1];
-            DEC_MEMREAD2 <= ID_EX_Controls[0];
+
+            DEC_REGWRITE <= REGWRITE_TO_DR;
+            DEC_MEMWRITE <= MEMWRITE_TO_DR;
+            DEC_MEMREAD2 <= MEMREAD2_TO_DR;
             
             DEC_ALU_FUN <= DR_ALU_FUN;
             
             DEC_RF_WR_SEL <= RF_WR_SEL_TO_DR;
             
-            ID_EX_RS1 <= FETCH_REG_OUT[19:15];
-            ID_EX_RS2 <= FETCH_REG_OUT[24:20];
-            ID_EX_RD <= FETCH_REG_OUT[11:7];
         end
     end
     
     
   // ---------------------------------------------- EXECUTE Stage ---------------------------------------------- 
-    logic [1:0] OVERRIDE_A;
-    logic [1:0] OVERRIDE_B;
-    logic [31:0] Forward1, Forward2;
-
     logic [31:0] ALU_OUT_TO_REG;
     
     logic [31:0] FINAL_ALU_A, FINAL_ALU_B;
@@ -177,25 +152,13 @@ module otter_mcu_pipeline(
     logic [31:0] EXEC_PC_4, EXEC_PC_MEM, EXEC_ALU_RESULT, EXEC_RS2;
     logic [1:0] EXEC_RF_WR_SEL;
     logic EXEC_REGWRITE, EXEC_MEMWRITE, EXEC_MEMREAD2;
-    logic [4:0] EX_MS_RD;
         
     Branch_Addr_Gen_HW_5 Target_Gen (.PC_COUNT(DEC_PC_OUT), .J_INPUT(DEC_J_TYPE), .B_INPUT(DEC_B_TYPE), .I_INPUT(DEC_I_TYPE),
                                     .RS1_INPUT(DEC_RS1), .JALR_OUT(JALR_TO_PC), .BRANCH_OUT(BRANCH_TO_PC), .JAL_OUT(JAL_TO_PC));
    
     Brand_Cond_Gen BC_Generator (.REG_INPUTA(DEC_RS1), .REG_INPUTB(DEC_RS2), .DR_MEM_OUT(DEC_MEM_IR), .PC_SOURCE_OUT(PCSOURCE_TO_PC));
     
-    Forward_Unit FU ( .ID_EX_RS1(ID_EX_RS1), .ID_EX_RS2(ID_EX_RS2),
-                    .EX_MS_RD(EX_MS_RD), .MS_WB_RD(MS_WB_RD),
-                    .A_override(OVERRIDE_A), .B_override(OVERRIDE_B),
-                    .EX_MS_regWrite(EXEC_REGWRITE), .MS_WB_regWrite(MEM_REG_WRITE));
-                        
-    Mult4to1 MUX_OVERRIDE_A (.In1(DEC_ALU_A), .In2(MEM_REG_ALU_RESULT), .In3(EXEC_ALU_RESULT),
-                             .In4(), .Sel(OVERRIDE_A), .Out(FINAL_ALU_A));
-  
-    Mult4to1 MUX_OVERRIDE_B (.In1(DEC_ALU_B), .In2(MEM_REG_ALU_RESULT), .In3(EXEC_ALU_RESULT),
-                             .In4(), .Sel(OVERRIDE_B), .Out(FINAL_ALU_B));
-
-    ALU_HW_4 Execute_ALU (.ALU_A(FINAL_ALU_A), .ALU_B(FINAL_ALU_B), .ALU_FUN(DEC_ALU_FUN), .RESULT(ALU_OUT_TO_REG));
+    ALU_HW_4 Execute_ALU (.ALU_A(DEC_ALU_A), .ALU_B(DEC_ALU_B), .ALU_FUN(DEC_ALU_FUN), .RESULT(ALU_OUT_TO_REG));
     
     always_ff @ (posedge CLOCK) begin
         if (RESET == 1'b1) begin
@@ -210,7 +173,6 @@ module otter_mcu_pipeline(
             EXEC_MEMWRITE <= 0;
             EXEC_MEMREAD2 <= 0;
             
-            EX_MS_RD <= 0;
         end
         else begin
             EXEC_PC_4 <= DEC_PC_4;
@@ -224,7 +186,6 @@ module otter_mcu_pipeline(
             EXEC_MEMWRITE <= DEC_MEMWRITE;
             EXEC_MEMREAD2 <= DEC_MEMREAD2;
             
-            EX_MS_RD <= ID_EX_RD;
         end      
     end
     
