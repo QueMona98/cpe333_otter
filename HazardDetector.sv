@@ -21,17 +21,16 @@
 
 module Hazard_Detector(
     input logic ID_EX_MemRead,
-    input logic [4:0] IF_ID_RS1, IF_ID_RS2, ID_EX_RS2,
+    input logic [4:0] IF_ID_RS1, IF_ID_RS2, ID_EX_RD,
     output logic select,
     output logic PCWrite,
     output logic IF_ID_Write
     );
             
     always_comb begin
-        
         // data hazard
         // Note: only detecting load-use hazard because forwarding is implemented
-        if(ID_EX_MemRead && ((ID_EX_RS2 == IF_ID_RS1) || (ID_EX_RS2 == IF_ID_RS2)))begin
+        if(ID_EX_MemRead && ((ID_EX_RD == IF_ID_RS1) || (ID_EX_RD == IF_ID_RS2)))begin
             select <= 0;
             PCWrite <= 0;
             IF_ID_Write <= 0;

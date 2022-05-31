@@ -41,9 +41,9 @@ module otter_mcu_pipeline(
     
     // Set to 1
     assign MEM_READ_1 = 1'b1;
-//    assign PC_WRITE = 1;
-//    assign IF_ID_Write = 1;
-
+    //    assign PC_WRITE = 1;
+    //    assign IF_ID_Write = 1;
+    
     // Fetch stage registers
     logic [31:0] FETCH_REG_OUT, FETCH_REG_PC, FETCH_REG_PC_4;
     
@@ -65,7 +65,7 @@ module otter_mcu_pipeline(
             FETCH_REG_PC_4 <= 0;
         end
         else if (IF_ID_Write != 0)begin
-            FETCH_REG_OUT <= MEM_IR;
+            FETCH_REG_OUT <= MEM_IR; 
             FETCH_REG_PC <= PC_OUT;
             FETCH_REG_PC_4 <= PC_PLUS_4;
         end
@@ -106,8 +106,8 @@ module otter_mcu_pipeline(
    Mult2to1 MUX_HDU( .In1(0), .In2({REGWRITE_TO_DR, MEMWRITE_TO_DR, MEMREAD2_TO_DR}),
                      .Sel(ID_EX_Controls_Sel), .Out(ID_EX_Controls));
                      
-   Hazard_Detector HDU (.ID_EX_MemRead(Decoder_memRead2),
-                        .IF_ID_RS1(FETCH_REG_OUT[19:15]), .IF_ID_RS2(FETCH_REG_OUT [24:20]), .ID_EX_RS2(ID_EX_RS2),
+   Hazard_Detector HDU (.ID_EX_MemRead(DEC_MEMREAD2),
+                        .IF_ID_RS1(FETCH_REG_OUT[19:15]), .IF_ID_RS2(FETCH_REG_OUT[24:20]), .ID_EX_RD(ID_EX_RD),
                         .select(ID_EX_Controls_Sel), .PCWrite(PC_WRITE), .IF_ID_Write(IF_ID_Write));
                            
     always_ff @ (posedge CLOCK) begin
@@ -164,7 +164,6 @@ module otter_mcu_pipeline(
   // ---------------------------------------------- EXECUTE Stage ---------------------------------------------- 
     logic [1:0] OVERRIDE_A;
     logic [1:0] OVERRIDE_B;
-    logic [31:0] Forward1, Forward2;
 
     logic [31:0] ALU_OUT_TO_REG;
     
@@ -230,11 +229,11 @@ module otter_mcu_pipeline(
     
 //----------------------------------- MEMORY Stage ----------------------------------------------- 
     // Memory stage registers
-    logic [31:0] MEM_REG_DOUT2, MEM_REG_ALU_RESULT, MEM_REG_IR, MEM_REG_PC_4;
+    logic [31:0] MEM_REG_ALU_RESULT, MEM_REG_IR, MEM_REG_PC_4;
     logic [1:0] MEM_RF_WR_SEL;
     logic MEM_REG_WRITE;
     logic [4:0] MS_WB_RD;
-    logic [31:0] DOUT2_TO_MEM_REG;
+    logic [31:0] MEMDOUT2_TO_REG;
     
     // For now, assign CSR register to 0
     logic CSR_temp;
@@ -246,7 +245,6 @@ module otter_mcu_pipeline(
     always_ff @ (posedge CLOCK) begin
         if (RESET == 1'b1) begin
             MEM_REG_PC_4 <= 0;
-            MEM_REG_DOUT2 <= 0;
             MEM_REG_ALU_RESULT <= 0;
             MEM_REG_IR <= 0;
             
@@ -258,7 +256,6 @@ module otter_mcu_pipeline(
         end
         else begin
             MEM_REG_PC_4 <= EXEC_PC_4;
-            MEM_REG_DOUT2 <=  DOUT2_TO_MEM_REG;
             MEM_REG_ALU_RESULT <= EXEC_ALU_RESULT;
             MEM_REG_IR <= EXEC_PC_MEM;
             
@@ -273,18 +270,19 @@ module otter_mcu_pipeline(
 //----------------------------------- WRITEBACK Stage ----------------------------------------------- 
     logic [31:0] MUX_OUT_TO_REG_FILE;  
     
-    Reg_file_MUX Reg_MUX (.ALU_OUT(MEM_REG_ALU_RESULT), .MEM_DOUT_2(MEM_REG_DOUT2), .CSR_RD(CSR_temp),
+    Reg_file_MUX Reg_MUX (.ALU_OUT(MEM_REG_ALU_RESULT), .MEM_DOUT_2(MEMDOUT2_TO_REG), .CSR_RD(CSR_temp),
                           .PC_OUT(MEM_REG_PC_4), .RF_WR_SEL(MEM_RF_WR_SEL), .MUX_OUT(MUX_OUT_TO_REG_FILE));
     
  
 //----------------------------------- MEMORY ----------------------------------------------- 
-    Memory Mem_Module (.MEM_CLK(CLOCK), .MEM_ADDR1(PC_OUT[15:2]), .MEM_RDEN1(MEM_READ_1), .MEM_DOUT1(MEM_IR),
-                       .MEM_ADDR2(EXEC_ALU_RESULT), .MEM_DIN2(EXEC_RS2), .MEM_WE2(EXEC_MEMWRITE), .MEM_RDEN2(EXEC_MEMREAD2), 
-                       .MEM_SIZE(EXEC_PC_MEM[14:12]), .IO_WR(IOBUS_WR), .MEM_DOUT2(DOUT2_TO_MEM_REG));
-
+    OTTER_mem_dualport Mem_Module(.MEM_CLK(CLOCK), .MEM_ADDR1(PC_OUT), .MEM_READ1(MEM_READ_1), .MEM_DOUT1(MEM_IR),
+                              .MEM_ADDR2(EXEC_ALU_RESULT), .MEM_DIN2(EXEC_RS2), .MEM_WRITE2(EXEC_MEMWRITE), .MEM_READ2(EXEC_MEMREAD2), 
+                              /*.MEM_SIZE(EXEC_PC_MEM[14:12]), */.IO_WR(IOBUS_WR), .MEM_DOUT2(MEMDOUT2_TO_REG));
+    
     
 // ----------------------------------- REGISTER FILE -----------------------------------------------
-   Register_File_HW_3 Reg_File (.CLOCK(CLOCK), .input_reg(MEM_REG_IR), .RF_RS1(REG_FILE_RS1),
+   Register_File_HW_3 Reg_File (.CLOCK(CLOCK), .adr1(FETCH_REG_OUT[19:15]), .adr2(FETCH_REG_OUT[24:20]),
+                                .wa(MEM_REG_IR[11:7]), .RF_RS1(REG_FILE_RS1),
                                 .RF_RS2(REG_FILE_RS2), .WD(MUX_OUT_TO_REG_FILE), .ENABLE(MEM_REG_WRITE));
     
 endmodule 
