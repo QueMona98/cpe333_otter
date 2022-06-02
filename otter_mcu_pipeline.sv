@@ -36,7 +36,7 @@ module otter_mcu_pipeline(
     logic IF_ID_Write;
     logic [31:0] MUX_to_PC;  
     logic [31:0] PC_OUT, PC_PLUS_4;
-    logic [31:0] MEM_IR;
+    logic [31:0] MEM_IR, TEMP_MEM_IR;
     logic MEM_READ_1;
     
     // Set to 1
@@ -65,10 +65,18 @@ module otter_mcu_pipeline(
             FETCH_REG_PC_4 <= 0;
         end
         else if (IF_ID_Write != 0)begin
-            FETCH_REG_OUT <= MEM_IR; 
+            if (TEMP_MEM_IR == 0)
+                FETCH_REG_OUT <= MEM_IR;
+            else
+                FETCH_REG_OUT <= TEMP_MEM_IR;            
             FETCH_REG_PC <= PC_OUT;
             FETCH_REG_PC_4 <= PC_PLUS_4;
         end
+        
+        if (IF_ID_Write == 0)
+            TEMP_MEM_IR <= MEM_IR;
+        else
+            TEMP_MEM_IR <= 0;      
     end
    
 // ---------------------------------------------- DECODE Stage ---------------------------------------------- 
@@ -275,9 +283,9 @@ module otter_mcu_pipeline(
     
  
 //----------------------------------- MEMORY ----------------------------------------------- 
-    OTTER_mem_dualport Mem_Module(.MEM_CLK(CLOCK), .MEM_ADDR1(PC_OUT), .MEM_READ1(MEM_READ_1), .MEM_DOUT1(MEM_IR),
+    OTTER_mem_byte Mem_Module(.MEM_CLK(CLOCK), .MEM_ADDR1(PC_OUT), .MEM_READ1(MEM_READ_1), .MEM_DOUT1(MEM_IR),
                               .MEM_ADDR2(EXEC_ALU_RESULT), .MEM_DIN2(EXEC_RS2), .MEM_WRITE2(EXEC_MEMWRITE), .MEM_READ2(EXEC_MEMREAD2), 
-                              /*.MEM_SIZE(EXEC_PC_MEM[14:12]), */.IO_WR(IOBUS_WR), .MEM_DOUT2(MEMDOUT2_TO_REG));
+                              .MEM_SIZE(EXEC_PC_MEM[14:12]), .IO_WR(IOBUS_WR), .MEM_DOUT2(MEMDOUT2_TO_REG));
     
     
 // ----------------------------------- REGISTER FILE -----------------------------------------------
